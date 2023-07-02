@@ -19,7 +19,6 @@
 #include <readline/history.h>
 #include "sdb.h"
 #include "memory/paddr.h"
-
 static int is_batch_mode = false;
 
 void init_regex();
@@ -47,17 +46,20 @@ static int cmd_c(char *args) {
   cpu_exec(-1);
   return 0;
 }
+// CMD_INFO get the reg info
 static int cmd_info(char *args){
 	if(strcmp(args, "r") == 0)
 		isa_reg_display();
 	return 0;
 }
 
+// CMD_Q quit the NEMU
 static int cmd_q(char *args) {
   nemu_state.state = NEMU_QUIT;
   return -1;
 }
 
+// CMD_X scan virtual memory
 static int cmd_x(char *args){
 	char* n = strtok(args," ");
 	char* baseaddr = strtok(NULL," ");
@@ -72,6 +74,18 @@ static int cmd_x(char *args){
        }	       
 	return 0;
 }
+
+// expr + - * /
+static int cmd_expr(char* args){
+  bool flag = false;
+  expr(args, &flag);
+  if(flag)
+  printf("Success token\n");
+  else 
+  printf("Unsuccessful\n");
+  return 0;
+}
+
 
 
 
@@ -97,7 +111,7 @@ static struct {
   { "si", "run si program", cmd_si },
   { "info", "Get register info", cmd_info },
   { "x", "Scan the virtual memory", cmd_x },
-
+  {"expr","run expr",cmd_expr},
   /* TODO: Add more commands */
 
 };
