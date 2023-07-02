@@ -18,6 +18,7 @@
 #include <readline/readline.h>
 #include <readline/history.h>
 #include "sdb.h"
+#include "memory/paddr.h"
 
 static int is_batch_mode = false;
 
@@ -46,12 +47,43 @@ static int cmd_c(char *args) {
   cpu_exec(-1);
   return 0;
 }
-
+static int cmd_info(char *args){
+	if(strcmp(args, "r") == 0)
+		isa_reg_display();
+	return 0;
+}
 
 static int cmd_q(char *args) {
+  nemu_state.state = NEMU_QUIT;
   return -1;
 }
 
+static int cmd_x(char *args){
+	char* n = strtok(args," ");
+	char* baseaddr = strtok(NULL," ");
+	int len = 0;
+	paddr_t addr = 0;
+	sscanf(n, "%d", &len);
+	sscanf(baseaddr,"%x", &addr);
+       for(int i = 0 ; i < len ; i ++)
+       {
+	        printf("%x\n",paddr_read(addr,4));//addr len
+		addr = addr + 4;
+       }	       
+	return 0;
+}
+
+
+
+static int cmd_si(char *args){
+	int step = 0;
+	if(args == NULL)
+ 		step = 1;
+	else
+		sscanf(args,"%d",&step);// 读入 Step
+	cpu_exec(step);
+	return 0;
+}
 static int cmd_help(char *args);
 
 static struct {
@@ -62,6 +94,9 @@ static struct {
   { "help", "Display information about all supported commands", cmd_help },
   { "c", "Continue the execution of the program", cmd_c },
   { "q", "Exit NEMU", cmd_q },
+  { "si", "run si program", cmd_si },
+  { "info", "Get register info", cmd_info },
+  { "x", "Scan the virtual memory", cmd_x },
 
   /* TODO: Add more commands */
 
