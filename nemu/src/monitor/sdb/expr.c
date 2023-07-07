@@ -116,11 +116,11 @@ static bool make_token(char *e) {
 	/* Try all rules one by one. */
 	for (i = 0; i < NR_REGEX; i ++) {
 	    if (regexec(&re[i], e + position, 1, &pmatch, 0) == 0 && pmatch.rm_so == 0) {
-		char *substr_start = e + position;
+	//	char *substr_start = e + position;
 		int substr_len = pmatch.rm_eo;
 
-		Log("match rules[%d] = \"%s\" at position %d with len %d: %.*s",
-			i, rules[i].regex, position, substr_len, substr_len, substr_start);
+		//Log("match rules[%d] = \"%s\" at position %d with len %d: %.*s",
+		//	i, rules[i].regex, position, substr_len, substr_len, substr_start);
 
 		position += substr_len;
 
@@ -218,13 +218,15 @@ static bool make_token(char *e) {
 
 bool check_parentheses(int p, int q)
 {
-    if(tokens[p].type != ZUO  || tokens[q].type != YOU)
+   // return true;
+//    printf("p = %d, q = %d\n",tokens[p].type, tokens[q].type);
+    if(tokens[p].type != '('  || tokens[q].type != ')')
 	return false;
     int l = p , r = q;
     while(l < r)
     {
-	if(tokens[l].type == ZUO){
-	    if(tokens[r].type == YOU)
+	if(tokens[l].type == '('){
+	    if(tokens[r].type == ')')
 	    {
 		l ++ , r --;
 		continue;
@@ -233,7 +235,7 @@ bool check_parentheses(int p, int q)
 	    else 
 		r --;
 	}
-	else if(tokens[l].type == YOU)
+	else if(tokens[l].type == ')')
 	    return false;
 	else l ++;
     }
@@ -263,13 +265,24 @@ uint32_t eval(int p, int q) {
 	/* The expression is surrounded by a matched pair of parentheses.
 	 * If that is the case, just throw away the parentheses.
 	 */
+	// printf("check p = %d, q = %d\n",p + 1 , q - 1);
 	return eval(p + 1, q - 1);
     }
+   /* else if(check_parentheses(p, q) == false){
+    	printf("Unique\n");
+	return -1;
+    }
+    */
     else {
 	int op = -1; // op = the position of 主运算符 in the token expression;
 	bool flag = false; 
 	for(int i = p ; i <= q ; i ++)
 	{
+	    if(tokens[i].type == '(')
+	    {
+		while(tokens[i].type != ')')
+			i ++;
+	    }
 	    if(tokens[i].type == '+' || tokens[i].type == '-'){
 		flag = true;
 		op = max(op, i);
@@ -278,13 +291,14 @@ uint32_t eval(int p, int q) {
 		op = max(op, i);
 	    }
 	}
+//	printf("op position is %d\n", op);
 	// if register return $register
 	int  op_type = tokens[op].type;
 
 	// 递归处理剩余的部分
 	uint32_t  val1 = eval(p, op - 1);
 	uint32_t  val2 = eval(op + 1, q);
-	printf("val1 = %d, val2 = %d \n", val1, val2);
+//	printf("val1 = %d, val2 = %d \n", val1, val2);
 
 	switch (op_type) {
 	    case '+': 
@@ -315,7 +329,7 @@ word_t expr(char *e, bool *success)
     /* TODO: Insert codes to evaluate the expression. */
     *success = true;// Return token zhuang tai
 
-    for(int i = 0 ; i < len ; i ++){printf("token[%d] type = [%d]\n", i, tokens[i].type);}
+    // for(int i = 0 ; i < len ; i ++){printf("token[%d] type = [%d]\n", i, tokens[i].type);}
     /*
      *  Get length
      */ 
@@ -326,14 +340,14 @@ word_t expr(char *e, bool *success)
 	    break;
 	tokens_len ++;
     }
-	printf("tokens_len = %d \n" , tokens_len);
     /*
      * True Expr
      * Data tokens (num, op_type)
      */ 
     uint32_t res = 0;
-    printf("Begin calc <===================>\n");
+//    printf("Begin calc <===================>\n");
     res = eval(0, tokens_len - 1);
+ //   printf("check flag = %d\n",check_parentheses(0, tokens_len - 1));
     printf("uint32_t res = %d\n", res);		
 
     return 0;
