@@ -77,6 +77,11 @@ static int cmd_x(char *args){
 
 // expr + - * /
 static int cmd_expr(char* args){
+  if(args == NULL){
+      printf("No args\n");
+      return 0;
+  }
+  printf("args = %s\n", args);
   bool flag = false;
   expr(args, &flag);
   if(flag)
