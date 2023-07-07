@@ -76,7 +76,7 @@ static int cmd_x(char *args){
 }
 
 // expr + - * /
-static int cmd_expr(char* args){
+static int cmd_p(char* args){
     if(args == NULL){
 	printf("No args\n");
 	return 0;
@@ -117,7 +117,7 @@ static struct {
     { "si", "run si program", cmd_si },
     { "info", "Get register info", cmd_info },
     { "x", "Scan the virtual memory", cmd_x },
-    {"expr","run expr",cmd_expr},
+    {"p","run expr",cmd_p},
     /* TODO: Add more commands */
 
 };
