@@ -19,7 +19,7 @@
 #include <common.h>
 
 typedef struct {
-  word_t gpr[32];
+  word_t gpr[32];	// general purpose register;
   vaddr_t pc;
 } riscv32_CPU_state;
 

@@ -12,6 +12,13 @@
  *
  * See the Mulan PSL v2 for more details.
  ***************************************************************************************/
+/*
+ * TODO
+ * division zero fault.
+ * */
+
+
+
 
 #include <isa.h>
 #include <cpu/cpu.h>
@@ -48,7 +55,9 @@ static int cmd_c(char *args) {
 }
 // CMD_INFO get the reg info
 static int cmd_info(char *args){
-    if(strcmp(args, "r") == 0)
+    if(args == NULL)
+		printf("No args.\n");
+    else if(strcmp(args, "r") == 0)
 	isa_reg_display();
     return 0;
 }

@@ -76,7 +76,7 @@ static struct rule {
 #define NR_REGEX ARRLEN(rules)
 
 static regex_t re[NR_REGEX] = {};
-
+bool division_zero = false;
 /* Rules are used for many times.
  * Therefore we compile them only once before any usage.
  */
@@ -307,7 +307,12 @@ uint32_t eval(int p, int q) {
 		return val1 - val2;
 	    case '*': 
 		return val1 * val2;
-	    case '/': 
+	    case '/':
+		if(val2 == 0){
+		    //printf("division can't zero;\n");
+		    division_zero = true;
+		    return 0;
+		}	
 		return val1 / val2;
 	    default: 
 		printf("No Op type.");
@@ -343,13 +348,13 @@ word_t expr(char *e, bool *success)
     /*
      * Init the tokens str. 1 ==> -1.
      * */
-   // printf("%s\n",tokens[3].str);
+    // printf("%s\n",tokens[3].str);
     for(int i = 0 ; i < tokens_len ; i ++)
     {
 	if((tokens[i].type == '-' && i > 0 && tokens[i-1].type != NUM && tokens[i+1].type == NUM)
 		||
-	   (tokens[i].type == '-' && i == 0)
-		)
+		(tokens[i].type == '-' && i == 0)
+	  )
 	{
 	    //printf("%s\n", tokens[i+1].str);
 	    tokens[i].type = TK_NOTYPE;
@@ -358,7 +363,7 @@ word_t expr(char *e, bool *success)
 		tokens[i+1].str[j] = tokens[i+1].str[j-1];
 	    }
 	    tokens[i+1].str[0] = '-';
-	   // printf("%s\n", tokens[i+1].str);
+	    // printf("%s\n", tokens[i+1].str);
 	    for(int j = 0 ; j < tokens_len ; j ++){
 		if(tokens[j].type == TK_NOTYPE)
 		{
@@ -376,9 +381,12 @@ word_t expr(char *e, bool *success)
      */ 
     uint32_t res = 0;
     //    printf("Begin calc <===================>\n");
-     res = eval(0, tokens_len - 1);
+    res = eval(0, tokens_len - 1);
     //    printf("%d\n", tokens[i].t   printf("check flag = %d\n",check_parentheses(0, tokens_len - 1));
-    printf("uint32_t res = %d\n", res);		
+    if(!division_zero)
+	printf("uint32_t res = %d\n", res);
+    else 
+	printf("Your input have an error: can't division zeor\n");    
     memset(tokens, 0, sizeof(tokens));
     return 0;
 
