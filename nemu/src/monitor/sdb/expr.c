@@ -58,19 +58,20 @@ static struct rule {
      * Inset the '(' and ')' on the [0-9] bottom case Bug.
      */
 
+    {"\\=\\=", EQ},        // equal
+    {"\\!\\=", NOTEQ},
 
-    {"\\$[a-z]+", RESGISTER},
+    {"\\|\\|", OR},       // Opetor
+    {"\\&\\&", AND},
+    {"\\!", '!'},
+
+    //{"\\$[a-z]*", RESGISTER},
+    {"\\$[a-zA-Z]*[0-9]*", RESGISTER},
     {"0[xX][0-9a-fA-F]+", HEX},
     {"[0-9]*", NUM},
     // zimu
 
-    {"==", EQ},        // equal
-    {"!=", NOTEQ},
 
-
-    {"\\|\\|", OR},       // Opetor
-    {"&&", AND},
-    {"!", '!'},
 };
 
 #define NR_REGEX ARRLEN(rules)
@@ -91,6 +92,38 @@ void init_regex() {
 	    regerror(ret, &re[i], error_msg, 128);
 	    panic("regex compilation failed: %s\n%s", error_msg, rules[i].regex);
 	}
+    }
+}
+
+int char2int(char s[]){
+    int s_size = strlen(s);
+    int res = 0 ;
+    for(int i = 0 ; i < s_size ; i ++)
+    {
+	res += s[i] - '0';
+	res *= 10;
+    }
+    res /= 10;
+    return res;
+}
+void int2char(int x, char str[]){
+    int len = strlen(str);
+    memset(str, 0, len);
+    int tmp_index = 0;
+    int tmp_x = x;
+    int x_size = 0, flag = 1;
+    while(tmp_x){
+	tmp_x /= 10;
+	x_size ++;
+	flag *= 10;
+    }
+    flag /= 10;
+    while(x)
+    {
+	int a = x / flag; 
+	x %= flag;
+	flag /= 10;
+	str[tmp_index ++] = a + '0';
     }
 }
 
@@ -250,7 +283,6 @@ int max(int a, int b) {
 uint32_t eval(int p, int q) {
     if (p > q) {
 	/* Bad expression */
-	printf("p  = %d, q = %d , p > q\n",p,q);
 	assert(0);
 	return -1;
     }
@@ -283,7 +315,26 @@ uint32_t eval(int p, int q) {
 		while(tokens[i].type != ')')
 		    i ++;
 	    }
-	    if(tokens[i].type == '+' || tokens[i].type == '-'){
+	    if(tokens[i].type == 6){
+		flag = true;
+		op = max(op,i);
+	    }
+
+	    if(tokens[i].type == 7 ){
+		flag = true;
+		op = max(op,i);
+	    }
+
+	    if(tokens[i].type == 5){
+		flag = true;
+		op = max(op,i);
+	    }
+
+	    if(tokens[i].type == 4){
+		flag = true;
+		op = max(op,i);
+	    }
+	    if(!flag && (tokens[i].type == '+' || tokens[i].type == '-')){
 		flag = true;
 		op = max(op, i);
 	    }
@@ -314,6 +365,14 @@ uint32_t eval(int p, int q) {
 		    return 0;
 		}	
 		return val1 / val2;
+	    case 4:
+		return val1 == val2;
+	    case 5:
+		return val1 != val2;
+	    case 6:
+		return val1 || val2;
+	    case 7:
+		return val1 && val2;
 	    default: 
 		printf("No Op type.");
 		assert(0);
@@ -345,10 +404,59 @@ word_t expr(char *e, bool *success)
 	    break;
 	tokens_len ++;
     }
+    // int tokens_len_F = tokens_len;
+
+    /*
+     * Init the tokens regex
+     * TODO
+     *
+     */
+    for(int i = 0 ; i < tokens_len ; i ++)
+    {
+	if(tokens[i].type == 2)
+	{
+	    bool flag = true;
+	    int tmp = isa_reg_str2val(tokens[i].str, &flag);
+	    if(flag){
+		int2char(tmp, tokens[i].str); // transfrom the str --> $egx
+	    }else{
+		printf("Transfrom error. \n");
+		assert(0);
+	    }
+
+
+	    /*  for(int j = 0 ; j < tokens_len ; j ++){
+		if(tokens[j].type == TK_NOTYPE)
+		{
+		for(int k = j +1 ; k < tokens_len ; k ++){
+		tokens[k - 1] = tokens[k];
+		}
+		tokens_len -- ;
+		}
+		}
+		*/
+	}
+    }
+
+
+    /*
+     * Init the tokens HEX
+     */
+    for(int i = 0 ; i < tokens_len ; i ++)
+    {
+	if(tokens[i].type == 3)// Hex num
+	{
+	    int value = strtol(tokens[i].str, NULL, 16);
+	    int2char(value, tokens[i].str);
+	}
+    }
+
+
+
     /*
      * Init the tokens str. 1 ==> -1.
-     * */
-    // printf("%s\n",tokens[3].str);
+     *
+     */
     for(int i = 0 ; i < tokens_len ; i ++)
     {
 	if((tokens[i].type == '-' && i > 0 && tokens[i-1].type != NUM && tokens[i+1].type == NUM)
@@ -375,6 +483,36 @@ word_t expr(char *e, bool *success)
 	    }
 	}
     }
+
+    /*
+     * Init the tokens !
+     * TODO 
+     */
+    for(int i = 0 ; i < tokens_len ; i ++)
+    {
+	if(tokens[i].type == '!')
+	{
+	    tokens[i].type = TK_NOTYPE;
+	    int tmp = char2int(tokens[i+1].str);
+	    if(tmp == 0){
+		memset(tokens[i+1].str, 0 ,sizeof(tokens[i+1].str));
+		tokens[i+1].str[0] = '1';
+	    }
+	    else{
+		memset(tokens[i+1].str, 0 , sizeof(tokens[i+1].str));
+	    }
+	    for(int j = 0 ; j < tokens_len ; j ++){
+		if(tokens[j].type == TK_NOTYPE)
+		{
+		    for(int k = j +1 ; k < tokens_len ; k ++){
+			tokens[k - 1] = tokens[k];
+		    }
+		    tokens_len -- ;
+		}
+	    }
+	}
+    }
+
     /*
      * True Expr
      * Data tokens (num, op_type)
