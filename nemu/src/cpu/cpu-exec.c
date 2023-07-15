@@ -43,12 +43,9 @@ static void trace_and_difftest(Decode *_this, vaddr_t dnpc) {
     if (g_print_step) { IFDEF(CONFIG_ITRACE, puts(_this->logbuf)); }
     IFDEF(CONFIG_DIFFTEST, difftest_step(_this->pc, dnpc));
     // Scan all watchpoint.
-    printf("tracd : wp -> flag = %d,wp-> no = %d\n", wp_pool[0].flag,wp_pool[0].NO);
-    /*
     for(int i = 0 ; i < NR_WP; i ++){
 	if(wp_pool[i].flag)
 	{
-	    printf("scan flag = %d\n",wp_pool[i].flag);
 	    bool success = false;
 	    int tmp = expr(wp_pool[i].expr,&success);
 	    if(success){
@@ -65,7 +62,6 @@ static void trace_and_difftest(Decode *_this, vaddr_t dnpc) {
 	    }
 	}
     }
-    */
 }
 
 static void exec_once(Decode *s, vaddr_t pc) {
