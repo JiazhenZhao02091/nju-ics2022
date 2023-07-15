@@ -31,6 +31,7 @@ enum {
     AND = 7,
     ZUO = 8,
     YOU = 9,
+    LEQ = 10,
     POINT, NEG
 
 	/* TODO: Add more token types */
@@ -58,6 +59,7 @@ static struct rule {
      * Inset the '(' and ')' on the [0-9] bottom case Bug.
      */
 
+    {"\\<\\=", LEQ},		// TODO
     {"\\=\\=", EQ},        // equal
     {"\\!\\=", NOTEQ},
 
@@ -230,6 +232,11 @@ static bool make_token(char *e) {
 			strcpy(tokens[nr_token].str, "&&");
 			nr_token++;
 			break;
+		    case 10:
+			tokens[nr_token].type = 10;
+			strcpy(tokens[nr_token].str, "<=");
+			nr_token ++;
+			break;
 		    default:
 			printf("i = %d and No rules is com.\n", i);
 			break;
@@ -333,6 +340,10 @@ uint32_t eval(int p, int q) {
 	    if(tokens[i].type == 4){
 		flag = true;
 		op = max(op,i);
+	    }
+	    if(tokens[i].type == 10){
+	    	flag = true;
+		op = max(op, i);
 	    }
 	    if(!flag && (tokens[i].type == '+' || tokens[i].type == '-')){
 		flag = true;
@@ -512,6 +523,10 @@ word_t expr(char *e, bool *success)
 	    }
 	}
     }
+    /*
+     * TODO
+     * Jie yin yong
+     * */
 
     /*
      * True Expr
@@ -526,6 +541,6 @@ word_t expr(char *e, bool *success)
     else 
 	printf("Your input have an error: can't division zeor\n");    
     memset(tokens, 0, sizeof(tokens));
-    return 0;
+    return res;
 
 }

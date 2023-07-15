@@ -17,19 +17,41 @@
  * division zero fault.
  * */
 
-
-
-
 #include <isa.h>
 #include <cpu/cpu.h>
 #include <readline/readline.h>
 #include <readline/history.h>
 #include "sdb.h"
 #include "memory/paddr.h"
+#include "/home/zhaojiazhen/ics2022/nemu/src/monitor/sdb/watchpoint.h"
+
 static int is_batch_mode = false;
 
 void init_regex();
 void init_wp_pool();
+
+void sdb_watchpoint_display(){
+    bool flag = true;
+    for(int i = 0 ; i < NR_WP ; i ++){
+	if(wp_pool[i].flag){
+	    printf("Watchpoint.No: %d, expr = \"%s\", old_value = %d\n", wp_pool[i].NO, wp_pool[i].expr,wp_pool[i].old_value);
+		flag = false;
+	}
+    }
+    if(flag) printf("No watchpoint now.\n");
+}
+void delete_watchpoint(int no){
+    for(int i = 0 ; i < NR_WP ; i ++)
+	if(wp_pool[i].NO == no){
+	    free_wp(&wp_pool[i]);
+	    return ;
+	}
+}
+void create_watchpoint(char* args){
+    WP* p =  new_wp();
+    strcpy(p -> expr, args);
+    printf("Create watchpoint No.%d success.\n", p -> NO);
+}
 
 /* We use the `readline' library to provide more flexibility to read from stdin. */
 static char* rl_gets() {
@@ -56,12 +78,22 @@ static int cmd_c(char *args) {
 // CMD_INFO get the reg info
 static int cmd_info(char *args){
     if(args == NULL)
-		printf("No args.\n");
+	printf("No args.\n");
     else if(strcmp(args, "r") == 0)
 	isa_reg_display();
+    else if(strcmp(args, "w") == 0)
+	sdb_watchpoint_display();
     return 0;
 }
-
+// CMD_D delete watchpoint no
+static int cmd_d (char *args){
+    if(args == NULL)
+	printf("No args.\n");
+    else{
+	delete_watchpoint(atoi(args));
+    }
+    return 0;
+}
 // CMD_Q quit the NEMU
 static int cmd_q(char *args) {
     nemu_state.state = NEMU_QUIT;
@@ -101,7 +133,10 @@ static int cmd_p(char* args){
     return 0;
 }
 
-
+static int cmd_w(char* args){
+    create_watchpoint(args);
+    return 0;
+}
 
 
 static int cmd_si(char *args){
@@ -127,6 +162,8 @@ static struct {
     { "info", "Get register info", cmd_info },
     { "x", "Scan the virtual memory", cmd_x },
     {"p","run expr",cmd_p},
+    {"d", "delete watchpoint by NO", cmd_d},
+    {"w", "create watchpoint with expr", cmd_w},
     /* TODO: Add more commands */
 
 };
@@ -205,3 +242,21 @@ void init_sdb() {
     /* Initialize the watchpoint pool. */
     init_wp_pool();
 }
+/*
+   void sdb_watchpoint_display(){
+   for(int i = 0 ; i < NR_WP ; i ++)
+   if(wp_pool[i].flag)
+   printf("Watchpoint: %d, expr = %s, old_value = %d\n", wp_pool[i].NO, wp_pool[i].expr,wp_pool[i].old_value);
+   }
+   void delete_watchpoint(int no){
+   for(int i = 0 ; i < NR_WP ; i ++)
+   if(wp_pool[i].NO == no){
+   free_wp(wp_pool[i]);
+   return ;
+   }
+   }
+   void create_watchpoing(char* args){
+   WP* p = new_wp();
+   p -> expr = args;
+   }
+   */
