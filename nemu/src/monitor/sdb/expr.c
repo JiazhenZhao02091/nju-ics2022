@@ -32,6 +32,7 @@ enum {
     ZUO = 8,
     YOU = 9,
     LEQ = 10,
+    YINYONG = 11,
     POINT, NEG
 
 	/* TODO: Add more token types */
@@ -528,6 +529,38 @@ word_t expr(char *e, bool *success)
      * TODO
      * Jie yin yong
      * */
+    for(int i = 0 ; i < tokens_len ; i ++)
+    {
+	if(	(tokens[i].type == '*' && i > 0 
+		    && tokens[i-1].type != NUM && tokens[i-1].type != HEX && tokens[i-1].type != RESGISTER
+		    && tokens[i+1].type == NUM 
+		    )
+                ||
+		(tokens[i].type == '*' && i > 0
+                    && tokens[i-1].type != NUM && tokens[i-1].type != HEX && tokens[i-1].type != RESGISTER
+                    && tokens[i+1].type == HEX
+                    )
+		||
+                (tokens[i].type == '*' && i == 0)
+          )
+	{
+	    tokens[i].type = TK_NOTYPE;
+	    int tmp = char2int(tokens[i+1].str);
+	    uintptr_t a = (uintptr_t)tmp;
+	    int value = *((int*)a);
+	    int2char(value, tokens[i+1].str);	    
+	    // 
+	    for(int j = 0 ; j < tokens_len ; j ++){
+		if(tokens[j].type == TK_NOTYPE)
+		{
+		    for(int k = j +1 ; k < tokens_len ; k ++){
+			tokens[k - 1] = tokens[k];
+		    }
+		    tokens_len -- ;
+		}
+	    }
+	}
+    }
 
     /*
      * True Expr

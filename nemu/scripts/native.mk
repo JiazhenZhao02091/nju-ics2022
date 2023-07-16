@@ -47,4 +47,14 @@ $(clean-tools):
 clean-tools: $(clean-tools)
 clean-all: clean distclean clean-tools
 
+count:
+
+	@echo "Counting functions in .c and .h files..."
+	@find . \( -name "*.c" -o -name "*.h" \) -exec cat {} + | grep -c '.*'
+
+countNoun:
+
+	@echo "Counting functions in .c and .h files...No Have Space"
+	@find . \( -name "*.c" -o -name "*.h" \) -exec cat {} + | grep -cE '^.+$$'
+
 .PHONY: run gdb run-env clean-tools clean-all $(clean-tools)
