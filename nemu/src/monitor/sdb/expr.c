@@ -324,26 +324,26 @@ uint32_t eval(int p, int q) {
 		while(tokens[i].type != ')')
 		    i ++;
 	    }
-	    if(tokens[i].type == 6){
+	    if(!flag &&  tokens[i].type == 6){
 		flag = true;
 		op = max(op,i);
 	    }
 
-	    if(tokens[i].type == 7 ){
+	    if(!flag &&  tokens[i].type == 7 ){
 		flag = true;
 		op = max(op,i);
 	    }
 
-	    if(tokens[i].type == 5){
+	    if(!flag && tokens[i].type == 5){
 		flag = true;
 		op = max(op,i);
 	    }
 
-	    if(tokens[i].type == 4){
+	    if(!flag && tokens[i].type == 4){
 		flag = true;
 		op = max(op,i);
 	    }
-	    if(tokens[i].type == 10){
+	    if(!flag && tokens[i].type == 10){
 		flag = true;
 		op = max(op, i);
 	    }
