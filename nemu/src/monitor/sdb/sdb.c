@@ -25,7 +25,7 @@
 #include "memory/paddr.h"
 #include "/home/zhaojiazhen/ics2022/nemu/src/monitor/sdb/watchpoint.h"
 
-static int is_batch_mode = false;
+static int is_batch_mode = false; // ignore c
 
 void init_regex();
 void init_wp_pool();
@@ -247,21 +247,3 @@ void init_sdb() {
     /* Initialize the watchpoint pool. */
     init_wp_pool();
 }
-/*
-   void sdb_watchpoint_display(){
-   for(int i = 0 ; i < NR_WP ; i ++)
-   if(wp_pool[i].flag)
-   printf("Watchpoint: %d, expr = %s, old_value = %d\n", wp_pool[i].NO, wp_pool[i].expr,wp_pool[i].old_value);
-   }
-   void delete_watchpoint(int no){
-   for(int i = 0 ; i < NR_WP ; i ++)
-   if(wp_pool[i].NO == no){
-   free_wp(wp_pool[i]);
-   return ;
-   }
-   }
-   void create_watchpoing(char* args){
-   WP* p = new_wp();
-   p -> expr = args;
-   }
-   */
