@@ -5,9 +5,9 @@
 !/nexus-am/*
 !/nanos-lite/*
 !/navy-apps/*
+!/file/*
 !Makefile
 !README.md
 !.gitignore
 !init.sh
-!/file/
 /fceux-am
