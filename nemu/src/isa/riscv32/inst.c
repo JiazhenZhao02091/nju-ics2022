@@ -35,8 +35,9 @@ enum {
 #define immI() do { *imm = SEXT(BITS(i, 31, 20), 12); } while(0)
 #define immU() do { *imm = SEXT(BITS(i, 31, 12), 20) << 12; } while(0)
 #define immS() do { *imm = (SEXT(BITS(i, 31, 25), 7) << 5) | BITS(i, 11, 7); } while(0)
-// #define immB() do { *imm = SEXT(BITS(i,31,31),1) << 12 | BITS(i,7,7) << 11 | SEXT(BITS(i,30,25),6) << 5 | BITS(i,11,8) << 1;} while(0)
-#define immB() do { *imm = BITS(i,31,31) << 11 | BITS(i,7,7) << 10 | SEXT(BITS(i,30,25),6) << 4 | BITS(i,11,8);} while(0)
+#define immB() do { *imm = (SEXT(BITS(i, 31, 31), 1) << 11) | BITS(i, 7, 7) << 10 | BITS(i, 30, 25) << 4 | BITS(i, 11, 8);} while(0)
+// #define immB() do { *imm = SEXT( SEXT(BITS(i,31,31),1) << 12 | BITS(i,7,7) << 11 | SEXT(BITS(i,30,25),6) << 5 | BITS(i,11,8) << 1,13);} while(0)
+// #define immB() do { *imm = BITS(i,31,31) << 11 | BITS(i,7,7) << 10 | SEXT(BITS(i,30,25),6) << 4 | BITS(i,11,8);} while(0)
 #define immJ() do { *imm = SEXT( ((BITS(i, 31, 31) << 19) | BITS(i, 30, 21) | (BITS(i, 20, 20) << 10) | (BITS(i, 19, 12) << 11) ) << 1, 21);} while(0) 
 // #define immJ() do { *imm = SEXT(BITS(i,31,31),1) << 19 | SEXT(BITS(i,19,12),8) << 11 | BITS(i,20,20) << 10 | SEXT(BITS(i,30,21),10);} while(0)
 /*
@@ -75,7 +76,6 @@ static void decode_operand(Decode *s, int *rd, word_t *src1, word_t *src2, word_
 	case TYPE_U:                   immU(); break;
 	case TYPE_S: src1R(); src2R(); immS(); break;
 	case TYPE_J:
-    /*		   
 		     int imm_20 = (i >> 31) & 1;
 		     int imm_10_1 = (i >> 21) & 0x3FF;
 		     int imm_11 = (i >> 20) & 1;
@@ -83,14 +83,11 @@ static void decode_operand(Decode *s, int *rd, word_t *src1, word_t *src2, word_
 		     *imm = imm_20 << 19 | imm_12_19 << 11 | imm_11 << 10 | imm_10_1;
 		     if(imm_20 == 0){
 		     	*imm = *imm << 1;
-		     	*imm -= 4;
 		     }
 		     else{
-			*imm |= 0xFFF00000;
+			    *imm |= 0xFFF00000;
 		     	*imm = *imm << 1;
-			*imm -= 4;
 		     }
-    */
             immJ();
 		    break;
 	case TYPE_R:
@@ -99,23 +96,22 @@ static void decode_operand(Decode *s, int *rd, word_t *src1, word_t *src2, word_
 	case TYPE_B:
 		     src1R();src2R();
 		     immB();
-            *imm  = *imm << 1;
-            *imm = SEXT(*imm,13);
+            *imm <<=1;
+            // *imm  = *imm << 1;
+            // *imm = SEXT(*imm,13);
 		    //  if(*imm >> 11 & 1){
-			// //  printf("imm& = %x.\n", *imm);
+			//  printf("imm& = %x.\n", *imm);
 			//  *imm |= 0xFFFF000;
 		    //  }
-            //  else{
-
-            //  }
-		     break;
+            // printf("Type B imm = %d %x.\n",*imm, *imm);
+		    break;
     }
 }
 
 static int decode_exec(Decode *s) {
     int rd = 0;
     word_t src1 = 0, src2 = 0, imm = 0;
-    s->dnpc = s->snpc; // s -> pc + 4
+    s->dnpc = s->snpc; //  = s -> pc + 4
 
 #define INSTPAT_INST(s) ((s)->isa.inst.val)
 #define INSTPAT_MATCH(s, name, type, ... /* execute body */ ) { \
@@ -137,16 +133,17 @@ static int decode_exec(Decode *s) {
     INSTPAT("??????? ????? ????? 111 ????? 11000 11", bgeu   , B, if (src1 >= src2) s->dnpc = s->pc + imm);
     INSTPAT("??????? ????? ????? 101 ????? 11000 11", bge    , B, if ((sword_t)src1 >= (sword_t)src2) s->dnpc = s->pc + imm);
     INSTPAT("0000001 ????? ????? 100 ????? 01110 11", divw   , R, R(rd) = SEXT(src1, 32) / SEXT(src2, 32));
-    INSTPAT("? ?????????? ? ???????? ????? 11011 11", jal    , J , 
-    printf("ago : imm = %x s -> dnpc = %x, s -> pc = %x.\n",imm,s->dnpc , s->pc);
-    R(rd)=s->pc+4, s->dnpc = s->pc; s->dnpc += imm;
-        
-    // R(rd)=s->pc+4, s -> dnpc += imm - 4;
-    printf("end : imm = %x s -> dnpc = %x, s -> pc = %x.\n",imm,s->dnpc , s->pc)
-    );
+    // INSTPAT("? ?????????? ? ???????? ????? 11011 11", jal    , J , 
+    // R(rd)=s->pc+4, s->dnpc = s->pc + imm - 4;
+    // R(rd)=s->pc+4, s->dnpc = s->pc + imm; //
+    // );
+    INSTPAT("? ?????????? ? ???????? ????? 11011 11", jal    , J, R(rd) = s->pc + 4; s->dnpc = s ->pc + imm;);
+    INSTPAT("??????? ????? ????? ??? ????? 11011 11", jal    , J, s->dnpc = s->pc - 4; s->dnpc += imm; R(rd) = s->pc + 4);
+    INSTPAT("??????? ????? ????? 000 ????? 11001 11", jalr   , I, s->dnpc = (src1 + imm) & ~(word_t)1; R(rd) = s->pc + 4);
     //   INSTPAT("??????? ????? ????? ??? ????? 11011 11", jal    , J, s->dnpc = s->pc; s->dnpc += imm; R(rd) = s->pc + 4);
     // INSTPAT("??????? ????? ????? ??? ????? 11011 11", jal    , J, printf("s-pc = %x,s-dnpc = %x,s-snpc = %x",s->pc,s->dnpc,s->snpc);s->dnpc = s->pc; s->dnpc += imm; R(rd) = s->pc + 4);
-    INSTPAT("??????? ????? ????? 000 ????? 11001 11", jalr   , I, s->dnpc = (src1 + imm) & ~(word_t)1; R(rd) = s->pc + 4);
+    // INSTPAT("??????? ????? ????? 000 ????? 11001 11", jalr   , I, s->dnpc = (src1 + imm) & ~(word_t)1; R(rd) = s->pc + 4);
+    // INSTPAT("??????? ????? ????? 000 ????? 11001 11", jalr   , I, R(rd) = s->pc + 4; s->pc = (src1 + imm) & ~(word_t)1; );
     INSTPAT("??????? ????? ????? ??? ????? 01101 11", lui    , U, R(rd) = imm);
     INSTPAT("??????? ????? ????? 000 ????? 00000 11", lb     , I, R(rd) = SEXT(Mr(src1 + imm, 1), 8));
     INSTPAT("??????? ????? ????? 001 ????? 00000 11", lh     , I, R(rd) = SEXT(Mr(src1 + imm, 2), 16));
@@ -181,6 +178,9 @@ static int decode_exec(Decode *s) {
     INSTPAT("0000000 ????? ????? 100 ????? 01100 11", xor    , R, R(rd) = src1 ^ src2);
     INSTPAT("??????? ????? ????? 110 ????? 01100 11", rem    , R, R(rd) = src1 % src2);
     INSTPAT("??????? ????? ????? 100 ????? 01100 11", div    , R, R(rd) = src1 / src2);
+    INSTPAT("??????? ????? ????? 001 ????? 01100 11", sll    , R, R(rd) = src1  <<  src2);
+    INSTPAT("??????? ????? ????? 101 ????? 01100 11", srl    , R, R(rd) = src1  >>  src2); // unsigned?
+    
 /*
     INSTPAT_START();
     INSTPAT("??????? ????? ????? ??? ????? 01101 11", lui    , U, R(rd) = imm);

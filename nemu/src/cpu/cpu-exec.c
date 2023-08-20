@@ -77,7 +77,7 @@ static void trace_and_difftest(Decode *_this, vaddr_t dnpc)
 static void exec_once(Decode *s, vaddr_t pc) {
     s->pc = pc;
     s->snpc = pc;
-    //Log("cpu-exec_once %x %x %x.\n",s->pc, s->dnpc, s->snpc);
+    // Log("cpu-exec_once %x %x %x.\n",s->pc, s->dnpc, s->snpc);
     isa_exec_once(s);
     cpu.pc = s->dnpc;
     //Log("isAgo.cpu-exec_once %x %x %x.\n",s->pc, s->dnpc, s->snpc);
