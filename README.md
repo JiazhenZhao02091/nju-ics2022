@@ -1,15 +1,8 @@
 # ICS2022 Programming Assignment
 
-This project is the programming assignment of the class ICS(Introduction to Computer System)
-in Department of Computer Science and Technology, Nanjing University.
-
-For the guide of this programming assignment,
-refer to https://nju-projectn.github.io/ics-pa-gitbook/ics2022/
-
-To initialize, run
-```bash
-bash init.sh subproject-name
-```
+This project version is NJUPA 2022
+项目地址为[南大PA](https://nju-projectn.github.io/ics-pa-gitbook/ics2022/)
+仅做记录使用，请勿无脑CV
 See `init.sh` for more details.
 
 The following subprojects/components are included. Some of them are not fully implemented.
