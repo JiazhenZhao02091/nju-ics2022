@@ -35,31 +35,38 @@ enum {
 #define immI() do { *imm = SEXT(BITS(i, 31, 20), 12); } while(0)
 #define immU() do { *imm = SEXT(BITS(i, 31, 12), 20) << 12; } while(0)
 #define immS() do { *imm = (SEXT(BITS(i, 31, 25), 7) << 5) | BITS(i, 11, 7); } while(0)
-#define immB() do { *imm = (SEXT(BITS(i, 31, 31), 1) << 11) | BITS(i, 7, 7) << 10 | BITS(i, 30, 25) << 4 | BITS(i, 11, 8);} while(0)
+#define immB() do { *imm = SEXT( ((SEXT(BITS(i, 31, 31), 1) << 11) | BITS(i, 7, 7) << 10 | BITS(i, 30, 25) << 4 | BITS(i, 11, 8)) << 1, 13);} while(0)
+#define immJ() do { *imm = SEXT( ((BITS(i, 31, 31) << 19) | BITS(i, 30, 21) | (BITS(i, 20, 20) << 10) | (BITS(i, 19, 12) << 11) ) << 1, 21);} while(0) 
+
+
+// #define immJ() do { *imm = SEXT(BITS(i,31,31),1) << 19 | SEXT(BITS(i,19,12),8) << 11 | BITS(i,20,20) << 10 | SEXT(BITS(i,30,21),10);} while(0)
 // #define immB() do { *imm = SEXT( SEXT(BITS(i,31,31),1) << 12 | BITS(i,7,7) << 11 | SEXT(BITS(i,30,25),6) << 5 | BITS(i,11,8) << 1,13);} while(0)
 // #define immB() do { *imm = BITS(i,31,31) << 11 | BITS(i,7,7) << 10 | SEXT(BITS(i,30,25),6) << 4 | BITS(i,11,8);} while(0)
-#define immJ() do { *imm = SEXT( ((BITS(i, 31, 31) << 19) | BITS(i, 30, 21) | (BITS(i, 20, 20) << 10) | (BITS(i, 19, 12) << 11) ) << 1, 21);} while(0) 
-// #define immJ() do { *imm = SEXT(BITS(i,31,31),1) << 19 | SEXT(BITS(i,19,12),8) << 11 | BITS(i,20,20) << 10 | SEXT(BITS(i,30,21),10);} while(0)
 /*
-#define immJ() do { 
 int imm_20 = (i >> 31) & 1;
-int imm_10_1 = (i >> 21) & 0x3FF;
-int imm_11 = (i >> 20) & 1;
-int imm_12_19 = (i >> 12) & 0xFF;
- *imm = imm_20 << 19 | imm_10_1 << 9 | imm_11 << 8 | imm_12_19; 
- } while(0)
- */
+		     int imm_10_1 = (i >> 21) & 0x3FF;
+		     int imm_11 = (i >> 20) & 1;
+		     int imm_12_19 = (i >> 12) & 0xFF;
+		     *imm = imm_20 << 19 | imm_12_19 << 11 | imm_11 << 10 | imm_10_1;
+		     if(imm_20 == 0){
+		     	*imm = *imm << 1;
+		     }
+		     else{
+			    *imm |= 0xFFF00000;
+		     	*imm = *imm << 1;
+		     }
+*/
 #define MAYBE_FUNC_JAL(s) IFDEF(CONFIG_ITRACE, { \
-  if (rd == 1) { \
+  if (dest == 1) { \
     trace_func_call(s->pc, s->dnpc, false); \
   } \
 })
 #define MAYBE_FUNC_JALR(s) IFDEF(CONFIG_ITRACE, { \
     if (s->isa.inst.val == 0x00008067) { \
       trace_func_ret(s->pc); \
-    } else if (rd == 1) { \
+    } else if (dest == 1) { \
       trace_func_call(s->pc, s->dnpc, false); \
-    } else if (rd == 0 && imm == 0) { \
+    } else if (dest == 0 && imm == 0) { \
       trace_func_call(s->pc, s->dnpc, true); \
     } \
   })
@@ -72,39 +79,12 @@ static void decode_operand(Decode *s, int *rd, word_t *src1, word_t *src2, word_
     int rs2 = BITS(i, 24, 20);
     *rd     = BITS(i, 11, 7);
     switch (type) {
-	case TYPE_I: src1R();          immI(); break;
-	case TYPE_U:                   immU(); break;
-	case TYPE_S: src1R(); src2R(); immS(); break;
-	case TYPE_J:
-		     int imm_20 = (i >> 31) & 1;
-		     int imm_10_1 = (i >> 21) & 0x3FF;
-		     int imm_11 = (i >> 20) & 1;
-		     int imm_12_19 = (i >> 12) & 0xFF;
-		     *imm = imm_20 << 19 | imm_12_19 << 11 | imm_11 << 10 | imm_10_1;
-		     if(imm_20 == 0){
-		     	*imm = *imm << 1;
-		     }
-		     else{
-			    *imm |= 0xFFF00000;
-		     	*imm = *imm << 1;
-		     }
-            immJ();
-		    break;
-	case TYPE_R:
-		     src1R();src2R();
-		     break;
-	case TYPE_B:
-		     src1R();src2R();
-		     immB();
-            *imm <<=1;
-            // *imm  = *imm << 1;
-            // *imm = SEXT(*imm,13);
-		    //  if(*imm >> 11 & 1){
-			//  printf("imm& = %x.\n", *imm);
-			//  *imm |= 0xFFFF000;
-		    //  }
-            // printf("Type B imm = %d %x.\n",*imm, *imm);
-		    break;
+    case TYPE_I: src1R();          immI(); break;
+    case TYPE_U:                   immU(); break;
+    case TYPE_S: src1R(); src2R(); immS(); break;
+    case TYPE_J:                   immJ(); break;
+    case TYPE_R: src1R(); src2R();         break;
+    case TYPE_B: src1R(); src2R(); immB(); break;
     }
 }
 
@@ -133,17 +113,24 @@ static int decode_exec(Decode *s) {
     INSTPAT("??????? ????? ????? 111 ????? 11000 11", bgeu   , B, if (src1 >= src2) s->dnpc = s->pc + imm);
     INSTPAT("??????? ????? ????? 101 ????? 11000 11", bge    , B, if ((sword_t)src1 >= (sword_t)src2) s->dnpc = s->pc + imm);
     INSTPAT("0000001 ????? ????? 100 ????? 01110 11", divw   , R, R(rd) = SEXT(src1, 32) / SEXT(src2, 32));
-    // INSTPAT("? ?????????? ? ???????? ????? 11011 11", jal    , J , 
-    // R(rd)=s->pc+4, s->dnpc = s->pc + imm - 4;
-    // R(rd)=s->pc+4, s->dnpc = s->pc + imm; //
-    // );
+    /*
+    INSTPAT("??????? ????? ????? ??? ????? 11011 11", jal    , J, s->dnpc = s->pc + imm; IFDEF(CONFIG_ITRACE, { 
+      if (rd == 1) { // x1: return address for jumps
+        trace_func_call(s->pc, s->dnpc, false);
+      }
+    }); R(rd) = s->pc + 4);
+    INSTPAT("??????? ????? ????? 000 ????? 11001 11", jalr   , I, s->dnpc = (src1 + imm) & ~(word_t)1; IFDEF(CONFIG_ITRACE, {
+      if (s->isa.inst.val == 0x00008067) {
+        trace_func_ret(s->pc); // ret -> jalr x0, 0(x1)
+      } else if (rd == 1) {
+        trace_func_call(s->pc, s->dnpc, false);
+      } else if (rd == 0 && imm == 0) {
+        trace_func_call(s->pc, s->dnpc, true); // jr rs1 -> jalr x0, 0(rs1), which may be other control flow e.g. 'goto','for'
+      }
+    }); R(rd) = s->pc + 4);
+    */
     INSTPAT("? ?????????? ? ???????? ????? 11011 11", jal    , J, R(rd) = s->pc + 4; s->dnpc = s ->pc + imm;);
-    INSTPAT("??????? ????? ????? ??? ????? 11011 11", jal    , J, s->dnpc = s->pc - 4; s->dnpc += imm; R(rd) = s->pc + 4);
     INSTPAT("??????? ????? ????? 000 ????? 11001 11", jalr   , I, s->dnpc = (src1 + imm) & ~(word_t)1; R(rd) = s->pc + 4);
-    //   INSTPAT("??????? ????? ????? ??? ????? 11011 11", jal    , J, s->dnpc = s->pc; s->dnpc += imm; R(rd) = s->pc + 4);
-    // INSTPAT("??????? ????? ????? ??? ????? 11011 11", jal    , J, printf("s-pc = %x,s-dnpc = %x,s-snpc = %x",s->pc,s->dnpc,s->snpc);s->dnpc = s->pc; s->dnpc += imm; R(rd) = s->pc + 4);
-    // INSTPAT("??????? ????? ????? 000 ????? 11001 11", jalr   , I, s->dnpc = (src1 + imm) & ~(word_t)1; R(rd) = s->pc + 4);
-    // INSTPAT("??????? ????? ????? 000 ????? 11001 11", jalr   , I, R(rd) = s->pc + 4; s->pc = (src1 + imm) & ~(word_t)1; );
     INSTPAT("??????? ????? ????? ??? ????? 01101 11", lui    , U, R(rd) = imm);
     INSTPAT("??????? ????? ????? 000 ????? 00000 11", lb     , I, R(rd) = SEXT(Mr(src1 + imm, 1), 8));
     INSTPAT("??????? ????? ????? 001 ????? 00000 11", lh     , I, R(rd) = SEXT(Mr(src1 + imm, 2), 16));
@@ -154,6 +141,12 @@ static int decode_exec(Decode *s) {
     INSTPAT("??????? ????? ????? 110 ????? 00000 11", lwu    , I, R(rd) = Mr(src1 + imm, 4));
     INSTPAT("0000001 ????? ????? 000 ????? 01100 11", mul    , R, R(rd) = src1 * src2);
     INSTPAT("0000001 ????? ????? 000 ????? 01110 11", mulw   , R, R(rd) = SEXT(src1 * src2, 32));
+        INSTPAT("0000001 ????? ????? 001 ????? 01100 11", mulh   , R, R(rd) = SEXT((src1 * src2),32);
+    // R(rd) = SEXT(src1 * src2, 32)
+    );
+    //       0000001 01111 01111 001 01011 01100 11
+    INSTPAT("0000001 ????? ????? 001 ????? 01100 11", remu   , R, printf("Hello, remu!.\n");R(rd) = (unsigned)src1 % (unsigned)src2;);
+    // 00000010110001010111011110110011
     INSTPAT("??????? ????? ????? 100 ????? 00100 11", xori   , I, R(rd) = src1 ^ imm);
     INSTPAT("0000000 ????? ????? 110 ????? 01100 11", or     , R, R(rd) = src1 | src2);
     INSTPAT("0000001 ????? ????? 110 ????? 01110 11", remw   , R, R(rd) = SEXT(src1, 32) % SEXT(src2, 32));
@@ -169,7 +162,17 @@ static int decode_exec(Decode *s) {
     INSTPAT("0000000 ????? ????? 001 ????? 01110 11", sllw   , R, R(rd) = SEXT(src1 << BITS(src2, 4, 0), 32));
     INSTPAT("000000? ????? ????? 101 ????? 00100 11", srli   , I, R(rd) = src1 >> BITS(imm, 5, 0)); 
     INSTPAT("0000000 ????? ????? 101 ????? 01110 11", srlw   , R, R(rd) = SEXT(BITS(src1, 31, 0) >> BITS(src2, 4, 0), 32));
-    INSTPAT("0100000 ????? ????? 101 ????? 01110 11", sraw   , R, R(rd) = (sword_t)SEXT(src1, 32) >> BITS(src2, 4, 0));
+
+    // INSTPAT("0100000 ????? ????? 101 ????? 01110 11", sra    , R, 
+    // //       0100000 01000 01010 101 01010 01100 11
+    // //       0100000 01000 01010 101 01010 01100 11
+    //   // R(rd) = (sword_t)SEXT(src1, 32) >> BITS(src2, 4, 0);
+    //   // printf("SRA :hello,world!\n");
+    //   R(rd) = SEXT(src1 >> BITS(src2,5,0), 32);
+    // );
+    
+    // INSTPAT("0100000 ????? ????? 101 ????? 01110 11", sraw   , R, printf("hello,world!\n"); R(rd) = (sword_t)SEXT(src1, 32) >> BITS(src2, 4, 0););
+    INSTPAT("0100000 ????? ????? 101 ????? 01110 11", sraw   , R, R(rd) = SEXT(src1, 32) >> BITS(src2, 4, 0););
     INSTPAT("010000? ????? ????? 101 ????? 00100 11", srai   , I, R(rd) = (sword_t)src1 >> BITS(imm, 5, 0));
     INSTPAT("010000? ????? ????? 101 ????? 00110 11", sraiw  , I, R(rd) = (sword_t)SEXT(src1, 32) >> BITS(imm, 4, 0));
     INSTPAT("0000000 ????? ????? 010 ????? 01100 11", slt    , R, R(rd) = (sword_t)src1 < (sword_t)src2);
@@ -177,6 +180,7 @@ static int decode_exec(Decode *s) {
     INSTPAT("0100000 ????? ????? 000 ????? 01110 11", subw   , R, R(rd) = SEXT(src1 - src2, 32));
     INSTPAT("0000000 ????? ????? 100 ????? 01100 11", xor    , R, R(rd) = src1 ^ src2);
     INSTPAT("??????? ????? ????? 110 ????? 01100 11", rem    , R, R(rd) = src1 % src2);
+    // 00000010110001010         111          01111           0110011
     INSTPAT("??????? ????? ????? 100 ????? 01100 11", div    , R, R(rd) = src1 / src2);
     INSTPAT("??????? ????? ????? 001 ????? 01100 11", sll    , R, R(rd) = src1  <<  src2);
     INSTPAT("??????? ????? ????? 101 ????? 01100 11", srl    , R, R(rd) = src1  >>  src2); // unsigned?
@@ -281,8 +285,15 @@ return 0;
 }
 
 int isa_exec_once(Decode *s) {
-    s->isa.inst.val = inst_fetch(&s->snpc, 4); //s->snpc += 4
- //   Log("isa-riscv32-isa_exec_once : %x %x %x\n", s -> pc, s -> dnpc, s -> snpc);
-    // IFDEF(CONFIG_ITRACE, trace_inst(s->pc, s->isa.inst.val));
-    return decode_exec(s);
+  s->isa.inst.val = inst_fetch(&s->snpc, 4); //s->snpc += 4
+  // Log("isa-riscv32-isa_exec_once : %x %x %x\n", s -> pc, s -> dnpc, s -> snpc);
+  /*      itrace          */
+  // IFDEF(CONFIG_ITRACE, trace_inst(s->pc, s->isa.inst.val));
+  return decode_exec(s);
 }
+
+/*
+1001 1000 0111 0110 0101 0100 0011 0010
+>>5
+000001001 1000 0111 0110 0101 0100 001
+*/
