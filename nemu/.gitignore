@@ -8,5 +8,6 @@
 !.gitignore
 !README.md
 !Kconfig
+!/am-kernels/
 include/config
 include/generated
