@@ -5,6 +5,16 @@
 
 #if !defined(__ISA_NATIVE__) || defined(__NATIVE_USE_KLIB__)
 
+int printf(const char *fmt, ...) {
+	char buffer[2048];
+	va_list arg;
+	va_start(arg, fmt);
+	int ret = vsprintf(buffer, fmt, arg);
+	putstr(buffer);
+	va_end(arg);
+	return ret;
+}
+
 int vsprintf(char *out, const char *fmt, va_list ap) {
   int len=0;
   while(*fmt!='\0'){
