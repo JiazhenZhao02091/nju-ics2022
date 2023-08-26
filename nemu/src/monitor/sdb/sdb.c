@@ -25,7 +25,7 @@
 #include "memory/paddr.h"
 #include "/home/zhaojiazhen/ics2022/nemu/src/monitor/sdb/watchpoint.h"
 
-static int is_batch_mode = true; // ignore c
+static int is_batch_mode = false; // ignore c
 
 void init_regex();
 void init_wp_pool();
